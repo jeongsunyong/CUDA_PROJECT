@@ -7,62 +7,48 @@ using namespace cv;
 using namespace std;
 
 int keycnt = 0;
-///// A S S I G N M E N T ///////////////////////////////////////////
+///// M E M O ////////// ///////////////////////////////////////////
 //
 //#1. INPUT
-//#   ¿òÁ÷ÀÓÀÌ Á¸ÀçÇÏ´Â 2ÀåÀÇ ¿¬¼Ó ÇÁ·¹ÀÓ¿µ»óÀ» ÀÔ·ÂÀ¸·Î »ç¿ë
+//#   ì›€ì§ì„ì´ ì¡´ì¬í•˜ëŠ” 2ì¥ì˜ ì—°ì† í”„ë ˆì„ì˜ìƒì„ ì…ë ¥ìœ¼ë¡œ ì‚¬ìš©
 //
 //#2. CORNER DETECTION
-//#   CORNER DETECTIONÀ» ÀÌ¿ëÇØ 2ÀåÀÇ ¿µ»ó Áß ¾ÕÂÊ ¿µ»óÀÇ Key Point¸¦ µµÃâ
-//#Harris Featrue
-//#Hog Discriptor
-//#SIFT
-//
-//#Harris Corner Detector
+//#   CORNER DETECTIONì„ ì´ìš©í•´ 2ì¥ì˜ ì˜ìƒ ì¤‘ ì•ìª½ ì˜ìƒì˜ Key Pointë¥¼ ë„ì¶œ
+//#   SIFT
 //
 //#3. MOTION VECTOR
-//#   OPTICAL FLOW¸¦ ÀÌ¿ëÇÏ¿© ¾ÕÂÊ ¿µ»óÀÇ KEYPOINTÇÈ¼¿ÀÇ MOTION VECTOR(x, y)¸¦ µµÃâ.
+//#   OPTICAL FLOWë¥¼ ì´ìš©í•˜ì—¬ ì•ìª½ ì˜ìƒì˜ KEYPOINTí”½ì…€ì˜ MOTION VECTOR(x, y)ë¥¼ ë„ì¶œ.
 //
-//#   - Keypoint µµÃâ ½Ã Á¶Á¤ °¡´É ÆÄ¶ó¹ÌÅÍ °ª Àç·®²¯
-//#   - ÆÄ¶ó¹ÌÅÍ Á¶Á¤¿¡ µû¸¥ ¼º´Éº¯È­ ±âÀÔ
-//#   - RGBÇÈ¼¿´ç ÇÑ°³ÀÇ detection°á°ú°¡ µµÃâµÇ°Ô ÇÔ
-//
-//#   - RGBÇÈ¼¿´ç ÇÑ°³ÀÇ motionÀÌ µµÃâµÊ
-//#   -¸ğ¼Ç µµÃâ °á°ú¸¦ ¿µ»ó¿¡ È¿°úÀûÀ¸·Î Ç¥Çö
-//#   -Á¶Á¤ °¡´ÉÇÑ ÆÄ¶ó¹ÌÅÍµéÀÇ Á¤ÀÇ´Â ÀÛ¼ºÀÚ º»ÀÎÀÌ ¼öÇà
-//#   - ÆÄ¶ó¹ÌÅÍ Á¶Á¤¿¡ µû¸¥ ¼º´Éº¯È­ ±âÀÔ
-//
-//
-//
-//
-//#EVALUATION
-//#code °³¹ß È¯°æ ±â¼ú(5)
-//#¾Ë°í¸®Áò flow chart·Î Ç¥Çö(5)
-//#ÀÌ·ĞÀû ¹è°æ°ú µ¿ÀÛ ¼³¸í(20)
-//#ÄÚµå ¼³¸í(20)
 ////////////////////////////////////////////////////////////////////
 Mat grayscale(Mat frame, int w, int h); //basic
 float Gaussian(int u, int v, float sigma);//basic
 Mat GaussianFilter(Mat frame, int w, int h, float sigma);//basic
 Mat Resize(Mat frame, float ratio, int w, int h);//basic
-void MakeGaussians(Mat** Octaves, Mat frame, int level, int size, int w, int h);//1.multi-sclae-extrema detectiojn
-void MakeDoG(Mat** DoG, Mat**Octaves, int level, int size);// 1.multi - sclae - extrema detectiojn
+// grayscale, Guassian, Gaussian filter : ìƒìš©í•¨ìˆ˜ ì‚¬ìš©ì˜ˆì • cv2.gaussian() cv2.resize()
 
-Mat finddelta(Mat** DoG, int x, int y, int lv, int s, int w, int h);//2.keypoint localization
-void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx);//1.multi - sclae - extrema detectiojn
-Mat orientAssignment(Mat Mask_f, int w, int h, int** idx, Mat* m, Mat* theta, Mat** octaves);
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+//(module - 1)
+void MakeGaussians(Mat** Octaves, Mat frame, int level, int size, int w, int h);
+//(module - 2)
+void MakeDoG(Mat** DoG, Mat**Octaves, int level, int size);
+
+Mat finddelta(Mat** DoG, int x, int y, int lv, int s, int w, int h);//(module - 3ì— í¬í•¨, loop X)
+//(module - 3)
+void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx); // 4ì¤‘forë¬¸ æœ‰
+//(module - 4)
 void motionExtraction(Mat frame1, Mat frame2, int cnt, int** idx, int** idx_aft, int h, int w);
 
 
 int main()
 {
 	//1.input
-	//Mat a = Mat({ 0,1,2,3 });
-	//cout << a.at<int>(1,0)<< endl;
-
+	// frame size
 	int w = 640;
 	int h = 360;
+	//gaussian filterë¥¼ ìœ„í•œ íŒŒë¼ë¯¸í„°ì˜ ì´ˆê¸°ê°’
 	float sigma = 1;
+	//img load
 	Mat frame1 = imread("cat_0.jpg", IMREAD_COLOR);
 	Mat frame2 = imread("cat_1.jpg", IMREAD_COLOR);
 	Mat frame3 = imread("cat_2.jpg", IMREAD_COLOR);
@@ -76,7 +62,7 @@ int main()
 
 	//2.Multi-Scale-Extrema - Detection
 
-	//Mat frame_g = grayscale(frame1, w, h);
+	//grayscale
 	Mat frame_g;
 	Mat frame_g2;
 	Mat frame_g3;
@@ -89,6 +75,7 @@ int main()
 	cv::cvtColor(frame5, frame_g5, COLOR_RGB2GRAY);
 
 
+	//octave /DoG : ì˜ìƒì²˜ë¦¬ë¥¼ ìœ„í•´ í•„ìš”í•œ ì´ë¯¸ì§€(processed) ì €ì¥ ë°°ì—´ 
 	Mat** octaves = new Mat*[4];
 	for (int i = 0; i < 4; i++)
 	{
@@ -99,20 +86,20 @@ int main()
 	{
 		DoG[i] = new Mat[4];
 	}
+	
 	MakeGaussians(octaves, frame_g, 4, 5, w, h);//level:4 size:5
 	MakeDoG(DoG, octaves, 4, 5);
 
 
 	//3.Keypint Localization ( scale-space-extreama)
-	int** idx = new int*[h*w]; //keypoint idx³ªÅ¸³»±âÀ§ÇÔ, [0][0]:cnt
+	int** idx = new int*[h*w]; //keypoint idxë‚˜íƒ€ë‚´ê¸°ìœ„í•¨, [0][0]:cnt
 	for (int i = 0; i < h*w; i++)
 	{
 		idx[i] = new int[3];
 	}
-	FindLocalExtrema(DoG, 4, 4, w, h, idx); //size : 4ÀÓ, DoGÀÇ SizeÀÌ¹Ç·Î //
+	FindLocalExtrema(DoG, 4, 4, w, h, idx); 
 
-	cout << idx[0][0] << endl;
-	int fcnt = idx[0][0];//feature : 1~fcnt±îÁö Á¸Àç
+	int fcnt = idx[0][0];//feature : 1~fcntê¹Œì§€ ì¡´ì¬
 
 
 	//OPtical Flow
@@ -220,7 +207,6 @@ int main()
 		circle(frame5, Point(x_pre, y_pre), int(1), Scalar(100, 150, 0));
 		int x = min(max(0, int(idx_aft3[i][1]) + int(idx_aft4[i][1])), w - 1);
 		int y = min(max(int(idx_aft3[i][0]) + int(idx_aft4[i][0]), 0), h - 1);
-		/*cout << x << "," << y << endl;*/
 		circle(frame4, Point(x, y), int(1), Scalar(50, 255, 255));
 		circle(frame5, Point(x, y), int(1), Scalar(50, 255, 255));
 		line(frame4, Point(x_pre, y_pre), Point(x, y), (50, 255, 0), 1);
@@ -242,11 +228,7 @@ int main()
 	imshow("5", frame5);
 	imshow("flows", flows);
 	waitKey(0);
-
-
-	//}
-
-	waitKey(0);
+	
 	return 0;
 }
 
@@ -339,10 +321,10 @@ void MakeGaussians(Mat** Octaves, Mat frame, int level, int size, int w, int h)
 	int h_d = h;
 	Mat downsampled = frame.clone();
 	float sigma = 0;
-	for (int i = 0; i < level; i++) //´Ù¸¥ octave : size down
+	for (int i = 0; i < level; i++) //ë‹¤ë¥¸ octave : size down
 	{
 		sigma = 0.5;
-		float sigma_ratio = 0.5;//ÆÄ¶ó¹ÌÅÍ
+		float sigma_ratio = 0.5;//íŒŒë¼ë¯¸í„°
 		float ratio = 0.5;
 		if (i == 0)
 			ratio = 1;
@@ -350,7 +332,7 @@ void MakeGaussians(Mat** Octaves, Mat frame, int level, int size, int w, int h)
 		Octaves[i][0] = Mat(downsampled.clone());
 		w_d = int(w_d*ratio);
 		h_d = int(h_d*ratio);
-		for (int j = 1; j < size; j++) //°°Àºoctave: sigma°ª º¯°æ
+		for (int j = 1; j < size; j++) //ê°™ì€octave: sigmaê°’ ë³€ê²½
 		{
 			Octaves[i][j] = GaussianFilter(downsampled, w_d, h_d, sigma);
 			sigma = sigma + sigma_ratio;//* sigma_ratio;
@@ -370,7 +352,7 @@ void MakeDoG(Mat** DoG, Mat**Octaves, int level, int size)
 	}
 }
 
-Mat finddelta(Mat** DoG, int x, int y, int lv, int s, int w, int h) //size: sigmaÀÇ sizeÀÓ. /candidate keypoint¿¡´ëÇØ Àû¿ë.
+Mat finddelta(Mat** DoG, int x, int y, int lv, int s, int w, int h) //size: sigmaì˜ sizeì„. /candidate keypointì—ëŒ€í•´ ì ìš©.
 {
 	Mat H = Mat::zeros(3, 3, CV_32FC1);
 	//Dxx(0,0) Dxy(0,1) Dxs(0,2)
@@ -412,13 +394,13 @@ void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx)
 	idx[0][0] = 0;
 	int cnt = idx[0][0];
 	Mat Mask = Mat::zeros(h, w, CV_8UC1);
-	float diffthreshold = 20;//ÆÄ¶ó¹ÌÅÍ
+	float diffthreshold = 20;//íŒŒë¼ë¯¸í„°
 	float ratio = 0.5;
 	int w_d = w;
 	int h_d = h;
 	for (int lv = 0; lv < level; lv++)
 	{
-		for (int sz = 1; sz < size - 1; sz++)//sigma°ª º¯È­
+		for (int sz = 1; sz < size - 1; sz++)//sigmaê°’ ë³€í™”
 		{
 			for (int i = 1; i < h_d - 1; i++)
 			{
@@ -434,7 +416,7 @@ void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx)
 					{
 						for (int l = -1; l <= 1; l++)//x
 						{
-							for (int m = -1; m <= 1; m++)//m:¿ÁÅ¸ºê
+							for (int m = -1; m <= 1; m++)//m:ì˜¥íƒ€ë¸Œ
 							{
 								if (k == 0 and l == 0 and m == 0)
 									continue;
@@ -457,7 +439,7 @@ void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx)
 							while (!(abs(delta.at<float>(0, 0)) < 0.5 && abs(delta.at<float>(1, 0)) < 0.5 && abs(delta.at<float>(2, 0)) < 0.5) && seriescnt <= 4)
 							{
 								delta = finddelta(DoG, j_tmp, i_tmp, lv, s_tmp, w_d, h_d);
-								j_tmp += int(round(delta.at<float>(0, 0)));//Àü°³ h°ª ´õÇØÁÜ
+								j_tmp += int(round(delta.at<float>(0, 0)));//ì „ê°œ hê°’ ë”í•´ì¤Œ
 								i_tmp += int(round(delta.at<float>(1, 0)));
 								s_tmp += int(round(delta.at<float>(2, 0)));
 
@@ -499,7 +481,7 @@ void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx)
 								cnt++;
 							if (Mask.at<uchar>(i_tmp*int(pow(1 / ratio, lv)), j_tmp*int(pow(1 / ratio, lv))) < DoG[lv][s_tmp].at<uchar>(i_tmp, j_tmp))
 							{
-								Mask.at<uchar>(i_tmp*int(pow(1 / ratio, lv)), j_tmp*int(pow(1 / ratio, lv))) = DoG[lv][s_tmp].at<uchar>(i_tmp, j_tmp); //1/ratio x 1/ratio¸¸Å­ downscalingÀÌ¹Ç·Î ¿øÀÌ¹ÌÁö¿¡¼­´Â 1/ratioÀÇ lvÁ¦°ö.7
+								Mask.at<uchar>(i_tmp*int(pow(1 / ratio, lv)), j_tmp*int(pow(1 / ratio, lv))) = DoG[lv][s_tmp].at<uchar>(i_tmp, j_tmp); //1/ratio x 1/ratioë§Œí¼ downscalingì´ë¯€ë¡œ ì›ì´ë¯¸ì§€ì—ì„œëŠ” 1/ratioì˜ lvì œê³±.7
 
 								idx[cnt][0] = i_tmp * int(pow(1 / ratio, lv));
 								idx[cnt][1] = j_tmp * int(pow(1 / ratio, lv));
@@ -522,7 +504,7 @@ void FindLocalExtrema(Mat** DoG, int level, int size, int w, int h, int** idx)
 
 void motionExtraction(Mat frame1, Mat frame2, int cnt, int** idx, int** idx_aft, int h, int w)
 {
-	int n = 5; // ºí·°Å©±â
+	int n = 5; // ë¸”ëŸ­í¬ê¸°
 	int range = int(n / 2);
 	Mat t[2];
 	t[0] = frame1;
